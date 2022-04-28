@@ -11,6 +11,10 @@
 
 static char *pid_max_filename = "/proc/sys/kernel/pid_max";
 static char *usage = "Usage: %s LIBRARY PROCEDURE FUNCTION\n";
+static char *file_read_err = "Failed to read from %s: %s\n";
+static char *eof = "EOF";
+static char *invalid_format = "invalid formatting";
+static char *file_open_err = "Failed to open %s: %s\n";
 
 
 ssize_t get_pid_max_strlen() {
@@ -20,7 +24,7 @@ ssize_t get_pid_max_strlen() {
     size_t len;
 
     if (!(pid_max_file = fopen(pid_max_filename, "r"))) {
-        fprintf(stderr, "Failed to open %s: %s\n", pid_max_filename, strerror(errno));
+        fprintf(stderr, file_open_err, pid_max_filename, strerror(errno));
         goto err_exit;
     }
 
@@ -30,12 +34,12 @@ ssize_t get_pid_max_strlen() {
             goto exit;
         case EOF:
             if (ferror(pid_max_file))
-                fprintf(stderr, "Failed to read PID max from %s: %s\n", pid_max_filename, strerror(errno));
+                fprintf(stderr, file_read_err, pid_max_filename, strerror(errno));
             else
-                fprintf(stderr, "Failed to read PID max from %s: EOF reached\n", pid_max_filename);
+                fprintf(stderr, file_read_err, pid_max_filename, eof);
             goto err_exit;
         default:
-            fprintf(stderr, "Failed to read PID max from %s: invalid formatting\n", pid_max_filename);
+            fprintf(stderr, file_read_err, pid_max_filename, invalid_format);
             goto err_exit;
     }
 
@@ -58,14 +62,14 @@ ssize_t get_load_addr(char *maps, const char *soname) {
     size_t line_len = 0;
 
     if (!(pid_maps_file = fopen(maps, "r"))) {
-        fprintf(stderr, "Failed to open file %s: %s\n", maps, strerror(errno));
+        fprintf(stderr, file_open_err, maps, strerror(errno));
         goto err_exit;
     }
 
     while (1) {
         if (getline(&line_ptr, &line_len, pid_maps_file) == -1) {
             if (ferror(pid_maps_file))
-                fprintf(stderr, "Failed to read line from %s: %s\n", maps, strerror(errno));
+                fprintf(stderr, file_read_err, maps, strerror(errno));
             goto err_exit;
         }
 
@@ -130,7 +134,7 @@ ssize_t get_library_load_addr(const char *process_name, const char *soname) {
 
             // check program name
             if (!(pid_status_file = fopen(status, "r"))) {
-                fprintf(stderr, "Failed to open file %s: %s\n", status, strerror(errno));
+                fprintf(stderr, file_open_err, status, strerror(errno));
                 goto err_exit;
             }
 
@@ -140,14 +144,14 @@ ssize_t get_library_load_addr(const char *process_name, const char *soname) {
                     break;
                 case EOF:
                     if (ferror(pid_status_file))
-                        fprintf(stderr, "Failed to read process name from %s: %s\n", status, strerror(errno));
+                        fprintf(stderr, file_read_err, status, strerror(errno));
                     else
-                        fprintf(stderr, "Failed to read process name from %s: EOF reached\n", status);
+                        fprintf(stderr, file_read_err, status, eof);
                     fclose(pid_status_file);
                     goto err_exit;
                 default:
                     fclose(pid_status_file);
-                    fprintf(stderr, "Failed to read process name from %s: invalid formatting\n", status);
+                    fprintf(stderr, file_read_err, status, invalid_format);
                     goto err_exit;
             }
 
