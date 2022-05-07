@@ -10,7 +10,7 @@
 #include "../binary_analysis.h"
 
 static const char *pid_max_filename = "/proc/sys/kernel/pid_max";
-static const char *usage = "Usage: %s LIBRARY PROCEDURE FUNCTION\n";
+static const char *usage = "Usage: %s PROC_NAME SO_PATH FUNC_NAME\n";
 static const char *file_read_err = "Failed to read from %s: %s\n";
 static const char *eof = "EOF";
 static const char *invalid_format = "invalid formatting";
@@ -163,10 +163,12 @@ ssize_t get_proc_lib_load_addr(const char *process_name, const char *soname) {
             if ((ret = parse_proc_map_lib_load_addr(maps, soname)) == -1)
                 fprintf(stderr, "Failed to find load address for %s in %s\n", soname, maps);
             else
-                fprintf(stderr, "%s addr: 0x%lx\n", soname, ret);
+                fprintf(stderr, "%s load address: 0x%lx\n", soname, ret);
             goto exit;
         }
     }
+
+    fprintf(stderr, "proc %s not found\n", process_name);
 
 err_exit:
     ret = -1;
@@ -192,10 +194,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if ((load_addr = get_proc_lib_load_addr(argv[2], basename(argv[1]))) == -1)
+    if ((load_addr = get_proc_lib_load_addr(argv[1], basename(argv[2]))) == -1)
         return 1;
 
-    if (load_binary(argv[1], &binary))
+    if (load_binary(argv[2], &binary))
         return 1;
 
 

@@ -74,7 +74,7 @@ long get_lib_func_off(struct binary *binary, const char *func_name) {
             bfd_section_name(bfd_asymbol_section(sym_table[i])) != BFD_UND_SECTION_NAME &&
             !strcmp(func_name, bfd_asymbol_name(sym_table[i]))
         ) {
-            fprintf(stderr, "name: %s, addr: 0x%08lx\n", bfd_asymbol_name(sym_table[i]), bfd_asymbol_value(sym_table[i]));
+            fprintf(stderr, "%s offset: 0x%08lx\n", bfd_asymbol_name(sym_table[i]), bfd_asymbol_value(sym_table[i]));
             return (long) bfd_asymbol_value(sym_table[i]);
         }
     }
