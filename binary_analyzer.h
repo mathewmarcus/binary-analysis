@@ -25,6 +25,6 @@ struct binary {
 
 int load_binary(const char *filename, struct binary *binary);
 void unload_binary(struct binary *binary);
-long get_lib_func_addr(struct binary *binary, const char *func_name);
+long get_lib_func_off(struct binary *binary, const char *func_name);
 
 #endif

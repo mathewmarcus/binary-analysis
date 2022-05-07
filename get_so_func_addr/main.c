@@ -9,12 +9,12 @@
 
 #include "../binary_analyzer.h"
 
-static char *pid_max_filename = "/proc/sys/kernel/pid_max";
-static char *usage = "Usage: %s LIBRARY PROCEDURE FUNCTION\n";
-static char *file_read_err = "Failed to read from %s: %s\n";
-static char *eof = "EOF";
-static char *invalid_format = "invalid formatting";
-static char *file_open_err = "Failed to open %s: %s\n";
+static const char *pid_max_filename = "/proc/sys/kernel/pid_max";
+static const char *usage = "Usage: %s LIBRARY PROCEDURE FUNCTION\n";
+static const char *file_read_err = "Failed to read from %s: %s\n";
+static const char *eof = "EOF";
+static const char *invalid_format = "invalid formatting";
+static const char *file_open_err = "Failed to open %s: %s\n";
 
 
 ssize_t get_pid_max_strlen() {
@@ -55,21 +55,21 @@ exit:
 
 }
 
-ssize_t get_load_addr(char *maps, const char *soname) {
-    FILE *pid_maps_file = NULL;
+ssize_t parse_proc_map_lib_load_addr(char *proc_maps_filename, const char *soname) {
+    FILE *proc_maps_file = NULL;
     ssize_t addr;
     char *sopath = NULL, *line_ptr = NULL;
     size_t line_len = 0;
 
-    if (!(pid_maps_file = fopen(maps, "r"))) {
-        fprintf(stderr, file_open_err, maps, strerror(errno));
+    if (!(proc_maps_file = fopen(proc_maps_filename, "r"))) {
+        fprintf(stderr, file_open_err, proc_maps_filename, strerror(errno));
         goto err_exit;
     }
 
     while (1) {
-        if (getline(&line_ptr, &line_len, pid_maps_file) == -1) {
-            if (ferror(pid_maps_file))
-                fprintf(stderr, file_read_err, maps, strerror(errno));
+        if (getline(&line_ptr, &line_len, proc_maps_file) == -1) {
+            if (ferror(proc_maps_file))
+                fprintf(stderr, file_read_err, proc_maps_filename, strerror(errno));
             goto err_exit;
         }
 
@@ -92,12 +92,12 @@ err_exit:
     addr = -1;
 
 exit:
-    if (pid_maps_file)
-        fclose(pid_maps_file);
+    if (proc_maps_file)
+        fclose(proc_maps_file);
     return addr;
 }
 
-ssize_t get_library_load_addr(const char *process_name, const char *soname) {
+ssize_t get_proc_lib_load_addr(const char *process_name, const char *soname) {
     DIR *proc = NULL;
     struct dirent *proc_dir;
     pid_t pid;
@@ -160,7 +160,7 @@ ssize_t get_library_load_addr(const char *process_name, const char *soname) {
 
             fprintf(stderr, "%s PID: %i\n", process_name, pid);
             
-            if ((ret = get_load_addr(maps, soname)) == -1)
+            if ((ret = parse_proc_map_lib_load_addr(maps, soname)) == -1)
                 fprintf(stderr, "Failed to find load address for %s in %s\n", soname, maps);
             else
                 fprintf(stderr, "%s addr: 0x%lx\n", soname, ret);
@@ -183,7 +183,7 @@ exit:
 
 
 int main(int argc, char *argv[]) {
-    long func_addr;
+    long func_off;
     ssize_t load_addr;
     struct binary binary = { 0 };
 
@@ -192,17 +192,17 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if ((load_addr = get_library_load_addr(argv[2], basename(argv[1]))) == -1)
+    if ((load_addr = get_proc_lib_load_addr(argv[2], basename(argv[1]))) == -1)
         return 1;
 
     if (load_binary(argv[1], &binary))
         return 1;
 
 
-    if ((func_addr = get_lib_func_addr(&binary, argv[3])) == -1)
+    if ((func_off = get_lib_func_off(&binary, argv[3])) == -1)
         return 1;
 
-    printf("0x%lx\n", load_addr + func_addr);
+    printf("0x%lx\n", load_addr + func_off);
 
     unload_binary(&binary);
     return 0;
