@@ -37,7 +37,8 @@ int load_binary(const char *filename, struct binary *binary) {
 
 
 void unload_binary(struct binary *binary) {
-    bfd_close(binary->handle);
+    if (binary->handle)
+        bfd_close(binary->handle);
 }
 
 
@@ -70,7 +71,7 @@ long get_lib_func_off(struct binary *binary, const char *func_name) {
     for (long i = 0; i < nsyms; i++) {
         if (
             sym_table[i]->flags & BSF_FUNCTION &&
-            sym_table[i]->flags & BSF_GLOBAL &&
+            (sym_table[i]->flags & BSF_GLOBAL || sym_table[i]->flags & BSF_WEAK) &&
             bfd_section_name(bfd_asymbol_section(sym_table[i])) != BFD_UND_SECTION_NAME &&
             !strcmp(func_name, bfd_asymbol_name(sym_table[i]))
         ) {
