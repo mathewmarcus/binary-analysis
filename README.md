@@ -6,18 +6,18 @@ A collection of utilities for analyzing binaries
 
 ## Configuration
 ```bash
-cd build/
-cmake ..
+$ cd build/
+$ cmake ..
 ```
 
 ## Building
 ```bash
-cd build/
-cmake --build .
+$ cd build/
+$ cmake --build .
 ```
 
 ## Installation
 ```bash
-cd build/
-sudo cmake --install .
+$ cd build/
+$ sudo cmake --install .
 ```
