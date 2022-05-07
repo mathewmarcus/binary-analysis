@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -184,28 +185,82 @@ exit:
 }
 
 
+char *get_so_basename(char *so_path, char **so_basename) {    
+    struct stat info;
+    char *link_target = NULL, *ptr;
+
+    if (lstat(so_path, &info) == -1) {
+        fprintf(stderr, "Failed to stat %s: %s\n", so_path, strerror(errno));
+        goto err_exit;
+    }
+
+    if ((info.st_mode & S_IFLNK) == S_IFLNK) {
+        if (!(link_target = malloc(info.st_size + 1))) {
+            fprintf(stderr, "Failed to allocate space for target of symlink %s: %s\n", so_path, strerror(errno));
+            goto err_exit;
+        }
+
+        if (readlink(so_path, link_target, info.st_size + 1) == -1) {
+            fprintf(stderr, "Failed to obtain target of symlink %s: %s\n", so_path, strerror(errno));
+            goto err_exit;
+        }
+        link_target[info.st_size] = '\0'; /* readlink doesn't add null terminator*/
+
+        ptr = link_target;
+    }
+    else {
+        ptr = so_path;
+    }
+
+    if ((*so_basename = strdup(basename(ptr)))) {
+        goto exit;
+    }
+    fprintf(stderr, "Failed to duplicate string %s: %s\n", basename(ptr), strerror(errno));
+
+err_exit:
+    *so_basename = NULL;
+
+exit:
+    free(link_target);
+
+    return *so_basename;
+}
+
+
 int main(int argc, char *argv[]) {
     long func_off;
     ssize_t load_addr;
     struct binary binary = { 0 };
+    char *so_basename = NULL;
+    int ret;
 
     if (argc < 4) {
         fprintf(stderr, usage, argv[0]);
-        return 1;
+        goto err_exit;
     }
 
-    if ((load_addr = get_proc_lib_load_addr(argv[1], basename(argv[2]))) == -1)
-        return 1;
+    if (!get_so_basename(argv[2], &so_basename)) {
+        goto err_exit;
+    }
+
+    if ((load_addr = get_proc_lib_load_addr(argv[1], so_basename)) == -1)
+        goto err_exit;
 
     if (load_binary(argv[2], &binary))
-        return 1;
+        goto err_exit;
 
 
     if ((func_off = get_lib_func_off(&binary, argv[3])) == -1)
-        return 1;
+        goto err_exit;
 
     printf("0x%lx\n", load_addr + func_off);
+    ret = 0;
+    goto exit;
 
+err_exit:
+    ret = 1;
+exit:
+    free(so_basename);
     unload_binary(&binary);
-    return 0;
+    return ret;
 }
