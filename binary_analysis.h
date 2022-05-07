@@ -1,5 +1,5 @@
-#ifndef BINARY_ANALYZER_H
-#define BINARY_ANALYZER_H
+#ifndef binary_analysis_H
+#define binary_analysis_H
 
 #include <stdint.h>
 #include <bfd.h>

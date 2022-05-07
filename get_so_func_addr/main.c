@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <libgen.h>
 
-#include "../binary_analyzer.h"
+#include "../binary_analysis.h"
 
 static const char *pid_max_filename = "/proc/sys/kernel/pid_max";
 static const char *usage = "Usage: %s LIBRARY PROCEDURE FUNCTION\n";

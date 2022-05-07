@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "binary_analyzer.h"
+#include "binary_analysis.h"
 
 
 int load_binary(const char *filename, struct binary *binary) {
